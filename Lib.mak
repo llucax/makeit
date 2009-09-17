@@ -7,9 +7,6 @@ Lib.mak.included := 1
 # T should be the path to the top-level directory.
 # C should be the path to the current directory.
 
-# Load top-level directory local configuration
-sinclude $T/Config.mak
-
 # Verbosity flag (empty show nice messages, 1 be verbose)
 # honour make -s flag
 override V := $(if $(findstring s,$(MAKEFLAGS)),1,$V)
