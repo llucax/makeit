@@ -1,0 +1,27 @@
+
+This is a test/example for a nice Make based build system.
+
+The Config.mak should not be saved to the repositories usually, but in this
+case it is because part of this demonstration is to show how to customize the
+build system through Config.mak, and specially to show how a project can be
+"embedded" into another tweaking the Config.mak.
+
+lib1 is a standalone C library compiled into a shared object.  lib2 is another
+shared library which uses lib1 and subproj, which is a standalone project
+"embedded" into this one. subproj produces another standalone shared object.
+Finally, prog is a program which uses lib1 and lib2.
+
+Every project have it's copy of Lib.mak and it's own Toplevel.mak, which has
+some global permanent configuration (which doesn't depends on users taste, it
+just have information about the project, like it's name, and does the work to
+include Lib.mak, etc.). Lib.mak shouldn't be modified ever (unless you're
+hacking the build system) and Toplevel.mak should be changes very rarely.
+
+Then each directory containing some library or program to build (or directories
+to include) has a Build.mak, which has only the logic to build the
+programs/libraries. A well-known Makefile is added to each directory where you
+want to be able to do "make", just for convenience. This Makefile should be
+created once, with the default target to build and path to the top-level
+directory and never touched again. Build.mak should be changes only to add new
+programs or libraries to build.
+
