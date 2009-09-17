@@ -7,9 +7,13 @@ Lib.mak.included := 1
 # T should be the path to the top-level directory.
 # C should be the path to the current directory.
 
-# Verbosity flag (empty show nice messages, 1 be verbose)
+# Verbosity flag (empty show nice messages, non-empty use make messages)
+# When used internal, $V expand to @ is nice messages should be printed, this
+# way it's easy to add $V in front of commands that should be silenced when
+# displaying the nice messages.
+override V := $(if $V,,@)
 # honour make -s flag
-override V := $(if $(findstring s,$(MAKEFLAGS)),1,$V)
+override V := $(if $(findstring s,$(MAKEFLAGS)),,$V)
 
 # Flavor (variant), should be one of "dbg", "opt" or "cov"
 F ?= opt
@@ -70,16 +74,16 @@ find_objects = $(patsubst $T/%.$1,$O/%.o,$(shell find $T/$C -name '*.$1'))
 abbr = $(addprefix $(shell echo $R | sed 's|/\?\([^/]\+\)/\?|../|g'),\
 		$(subst $T,.,$(patsubst $T/%,%,$1)))
 
-# Execute a command printing a nice message if $V is empty
+# Execute a command printing a nice message if $V is @.
 # The first argument is mandatory and it's the command to execute. The second
 # and third arguments are optional and are the target name and command name to
 # pretty print.
-vexec = $(if $V,,\
+vexec = $(if $V,\
 		echo '   $(notdir $(if $3,$(strip $3),$(firstword $1))) \
 				$(call abbr,$(if $2,$(strip $2),$@))' ; )$1
 
-# Same as vexec but it silence the echo command (prepending a @).
-exec = $(if $V,,@)$(call vexec,$1,$2,$3)
+# Same as vexec but it silence the echo command (prepending a @ if $V).
+exec = $V$(call vexec,$1,$2,$3)
 
 # Compile a source file to an object, generating pre-compiled headers and
 # dependencies. The pre-compiled headers are generated only if the system
@@ -89,7 +93,7 @@ exec = $(if $V,,@)$(call vexec,$1,$2,$3)
 # variables from a rule.
 define compile
 $(if $(GCH),\
-@if test -f $O/$*.d; then \
+$Vif test -f $O/$*.d; then \
 	tmp=`mktemp`; \
 	h=`awk -F: '!$$0 {f = 1} $$0 && f {print $$1}' $O/$*.d`; \
 	grep -h '^#include <' $(call abbr,$<) $$h | sort -u > "$$tmp"; \
@@ -233,7 +237,7 @@ setup_build_dir__ := $(shell \
 	test -L $D/last || ln -s $F $D/last )
 
 # Print any generated message (if verbose)
-$(if $V,,$(if $(setup_build_dir__), \
+$(if $V,$(if $(setup_build_dir__), \
 	$(info !! Something changed: $(setup_build_dir__) \
 			re-building affected files...)))
 
