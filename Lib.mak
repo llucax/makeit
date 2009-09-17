@@ -166,19 +166,6 @@ override LDFLAGS += -pg --coverage
 endif
 
 
-# Automatic rebuilding when flags or commands changes
-######################################################
-
-# Re-compile C files if one of this variables changes
-COMPILE.c.FLAGS := $(CC) ~ $(CPPFLAGS) ~ $(CFLAGS) ~ $(TARGET_ARCH)
-
-# Re-compile C++ files if one of this variables changes
-COMPILE.cpp.FLAGS := $(CXX) ~ $(CPPFLAGS) ~ $(CXXFLAGS) ~ $(TARGET_ARCH)
-
-# Re-link binaries and libraries if one of this variables changes
-LINK.o.FLAGS := $(LD) ~ $(LDFLAGS) ~ $(TARGET_ARCH)
-
-
 # Automatic dependency handling
 ################################
 
@@ -221,6 +208,33 @@ all: $$(all)
 # Create build directory structure
 ###################################
 
+
+# Create $O, $B, $L and $(INCLUDE_DIR) directories and replicate the directory
+# structure of the project into $O. Create one symlink "last" to the current
+# build directory.
+#
+# NOTE: the second mkdir can yield no arguments if the project don't have any
+#       subdirectories, that's why the current directory "." is included, so it
+#       won't show an error message in case of no subdirectories.
+setup_build_dir__ := $(shell \
+	mkdir -p $O $B $L $(INCLUDE_DIR); \
+	mkdir -p . $(addprefix $O,$(patsubst $T%,%,\
+			$(shell find $T -type d -not -path '$D*'))); \
+	test -L $D/last || ln -s $F $D/last )
+
+
+# Automatic rebuilding when flags or commands changes
+######################################################
+
+# Re-compile C files if one of this variables changes
+COMPILE.c.FLAGS += $(CC) ~ $(CPPFLAGS) ~ $(CFLAGS) ~ $(TARGET_ARCH)
+
+# Re-compile C++ files if one of this variables changes
+COMPILE.cpp.FLAGS += $(CXX) ~ $(CPPFLAGS) ~ $(CXXFLAGS) ~ $(TARGET_ARCH)
+
+# Re-link binaries and libraries if one of this variables changes
+LINK.o.FLAGS += $(LD) ~ $(LDFLAGS) ~ $(TARGET_ARCH)
+
 # Create a file with flags used to trigger rebuilding when they change. The
 # first argument is the name of the file where to store the flags, the second
 # are the flags and the third argument is a text to be displayed if the flags
@@ -230,29 +244,18 @@ gen_rebuild_flags = if test x"$2" != x"`cat $1 2>/dev/null`"; then \
 		test -f $1 && echo "$3"; \
 		echo "$2" > $1 ; fi
 
-# Create $O, $B, $L and $(INCLUDE_DIR) directories and replicate the directory
-# structure of the project into $O. Create one symlink "last" to the current
-# build directory.  It update the flags files to detect flag and/or compiler
-# changes to force a rebuild.
-#
-# NOTE: the second mkdir can yield no arguments if the project don't have any
-#       subdirectories, that's why the current directory "." is included, so it
-#       won't show an error message in case of no subdirectories.
-setup_build_dir__ := $(shell \
-	mkdir -p $O $B $L $(INCLUDE_DIR); \
-	mkdir -p . $(addprefix $O,$(patsubst $T%,%,\
-			$(shell find $T -type d -not -path '$D*'))); \
+# Create files containing the current flags to trigger a rebuild if they change
+setup_flag_files__ := $(shell \
 	$(call gen_rebuild_flags,$G/compile-c-flags, \
 			$(COMPILE.c.FLAGS),C compiler or flags;); \
 	$(call gen_rebuild_flags,$G/compile-cpp-flags, \
 			$(COMPILE.cpp.FLAGS),C++ compiler or flags;); \
 	$(call gen_rebuild_flags,$G/link-o-flags, \
-			$(LINK.o.FLAGS),linker or link flags;); \
-	test -L $D/last || ln -s $F $D/last )
+			$(LINK.o.FLAGS),linker or link flags;) )
 
 # Print any generated message (if verbose)
-$(if $V,$(if $(setup_build_dir__), \
-	$(info !! Something changed: $(setup_build_dir__) \
+$(if $V,$(if $(setup_flag_files__), \
+	$(info !! Something changed: $(setup_flag_files__) \
 			re-building affected files...)))
 
 endif
