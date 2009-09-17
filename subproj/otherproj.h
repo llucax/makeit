@@ -3,7 +3,7 @@
 extern "C" {
 #endif
 
-void subproj(void);
+void otherproj(void);
 
 #ifdef __cplusplus
 }

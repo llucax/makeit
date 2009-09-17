@@ -1,4 +1,3 @@
-
 ifndef Lib.mak.included
 Lib.mak.included := 1
 
@@ -51,11 +50,9 @@ B ?= $G/bin
 # Libraries directory
 L ?= $G/lib
 
-# Includes directory
-I ?= $G/include
 
-# Generated includes directory
-J ?= $G/geninc
+# Includes directory
+INCLUDE_DIR ?= $G/include
 
 
 # Functions
@@ -124,6 +121,13 @@ link = $(call exec,$(LINKER) $(LDFLAGS) $(TARGET_ARCH) -o $@ $1 \
 		$(patsubst $L/lib%.so,-l%,$(filter %.so,$^)) \
 		$(foreach obj,$(filter %.o,$^),$(obj)))
 
+# Create a symbolic link to the project under the $(INCLUDE_DIR). The first
+# argument is the name of symlink to create.  The link is only created if it
+# doesn't already exist.
+symlink_include_dir = $(shell \
+		test -L $(INCLUDE_DIR)/$1 \
+			|| ln -s $T/$C $(INCLUDE_DIR)/$1 )
+
 
 # Overrided flags
 ##################
@@ -132,7 +136,7 @@ link = $(call exec,$(LINKER) $(LDFLAGS) $(TARGET_ARCH) -o $@ $1 \
 override CPPFLAGS += -Wall
 
 # Use the includes directories to search for includes
-override CPPFLAGS += -I$I -I$J
+override CPPFLAGS += -I$(INCLUDE_DIR)
 
 # Be standard compilant
 override CFLAGS += -std=c99 -pedantic
@@ -175,6 +179,13 @@ COMPILE.cpp.FLAGS := $(CXX) ~ $(CPPFLAGS) ~ $(CXXFLAGS) ~ $(TARGET_ARCH)
 LINK.o.FLAGS := $(LD) ~ $(LDFLAGS) ~ $(TARGET_ARCH)
 
 
+# Automatic dependency handling
+################################
+
+# These files are created during compilation.
+sinclude $(shell test -d $O && find $O -name '*.d')
+
+
 # Default rules
 ################
 
@@ -196,11 +207,15 @@ $L/%.so: $G/link-o-flags
 clean:
 	$(call exec,$(RM) -r $D,$D)
 
-
-# Automatic dependency handling
-################################
-
-sinclude $(shell test -d $O && find $O -name '*.d')
+# These rules use the "Secondary Expansion" GNU Make feature, to allow
+# sub-makes to add values to the special variables $(all), after this makefile
+# was read.
+.SECONDEXPANSION:
+  
+# Phony rule to make all the targets (sub-makefiles can append targets to build
+# to the $(all) variable).
+.PHONY: all
+all: $$(all)
 
 
 # Create build directory structure
@@ -215,16 +230,16 @@ gen_rebuild_flags = if test x"$2" != x"`cat $1 2>/dev/null`"; then \
 		test -f $1 && echo "$3"; \
 		echo "$2" > $1 ; fi
 
-# Create $O, $B, $L, $I and $J directories and replicate the directory
+# Create $O, $B, $L and $(INCLUDE_DIR) directories and replicate the directory
 # structure of the project into $O. Create one symlink "last" to the current
-# build directory and another to use as include directory.  It update the flags
-# files to detect flag and/or compiler changes to force a rebuild.
+# build directory.  It update the flags files to detect flag and/or compiler
+# changes to force a rebuild.
 #
 # NOTE: the second mkdir can yield no arguments if the project don't have any
 #       subdirectories, that's why the current directory "." is included, so it
 #       won't show an error message in case of no subdirectories.
 setup_build_dir__ := $(shell \
-	mkdir -p $O $B $L $I $J; \
+	mkdir -p $O $B $L $(INCLUDE_DIR); \
 	mkdir -p . $(addprefix $O,$(patsubst $T%,%,\
 			$(shell find $T -type d -not -path '$D*'))); \
 	$(call gen_rebuild_flags,$G/compile-c-flags, \
@@ -233,20 +248,11 @@ setup_build_dir__ := $(shell \
 			$(COMPILE.cpp.FLAGS),C++ compiler or flags;); \
 	$(call gen_rebuild_flags,$G/link-o-flags, \
 			$(LINK.o.FLAGS),linker or link flags;); \
-	test -L $I/$P || ln -s $T $I/$P; \
 	test -L $D/last || ln -s $F $D/last )
 
 # Print any generated message (if verbose)
 $(if $V,$(if $(setup_build_dir__), \
 	$(info !! Something changed: $(setup_build_dir__) \
 			re-building affected files...)))
-
-# Include the Build.mak for this directory
-include $T/Build.mak
-
-# Phony rule to make all the targets (sub-makefiles can append targets to build
-# to the $(all) variable).
-.PHONY: all
-all: $(all)
 
 endif

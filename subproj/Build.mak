@@ -1,9 +1,11 @@
 
-$L/libsubproj.so: LINKER := $(CC)
-$L/libsubproj.so: $(call find_objects,c)
+setup_include_dir__ := $(call symlink_include_dir,otherproj)
 
-.PHONY: subproj
-subproj: $L/libsubproj.so
+$L/libotherproj.so: LINKER := $(CC)
+$L/libotherproj.so: $(call find_objects,c)
 
-all += subproj
+.PHONY: otherproj
+otherproj: $L/libotherproj.so
+
+all += otherproj
 

@@ -3,8 +3,8 @@
 T := ..
 
 # Include the "parent" project config
-sinclude $T/Toplevel.mak
+sinclude $T/Config.mak
 
 # Include the "parent" project config
-.DEFAULT_GOAL := subproj
+.DEFAULT_GOAL := otherproj
 
