@@ -1,5 +1,6 @@
 
 # Build the shared library
+$L/liblib2.so: CXXFLAGS += $(otherproj-PC-CFLAGS)
 $L/liblib2.so: $(call find_objects,cpp) $L/liblib1.so $L/libotherproj.so
 
 # Nice shortcut target

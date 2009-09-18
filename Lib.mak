@@ -169,6 +169,20 @@ install_file = $(call exec,install -m $(if $1,$1,0644) $(if $2,$2,-D) \
 # Will produce something like "a -- b --"
 varcat = $(foreach v,$1,$($2$v)$(if $3,$3, ~))
 
+# Replace variables with specified values in a template file.  The first
+# argument is a list of make variables names which will be replaced in the
+# target file.  The strings @VARNAME@ in the template file will be replaced
+# with the value of the make $(VARNAME) variable and the result will be stored
+# in the target file.  The second (optional) argument is a prefix to add to the
+# make variables names, so if the prefix is PREFIX_ and @VARNAME@ is found in
+# the template file, it will be replaced by the value of the make variable
+# $(PREFIX_VARNAME).  The third and fourth arguments are the source file and
+# the destination file (both optional, $< and $@ are used if omitted). The
+# fifth (optional) argument are options to pass to the substitute sed command
+# (for example, use "g" if you want to do multiple substitutions per line).
+replace = $(call exec,sed '$(foreach v,$1,s|@$v@|$($2$v)|$5;)' $(if $3,$3,$<) \
+		> $(if $4,$4,$@))
+
 # Create a symbolic link to the project under the $(INCLUDE_DIR). The first
 # argument is the name of symlink to create.  The link is only created if it
 # doesn't already exist.
@@ -254,6 +268,10 @@ $L/%.so: override CXXFLAGS += -fPIC
 $L/%.so: $G/link-o-flags
 	$(call link,-shared)
 
+# Create pkg-config files using a template
+$L/%.pc:
+	$(call replace,$(PC_VARS),$*-PC-)
+
 # Install binary programs
 $I/bin/%:
 	$(call install_file,0755)
@@ -261,6 +279,10 @@ $I/bin/%:
 # Install system binary programs
 $I/sbin/%:
 	$(call install_file,0755)
+
+# Install pkg-config specification files
+$I/lib/pkgconfig/%:
+	$(call install_file)
 
 # Install libraries
 $I/lib/%:
