@@ -99,17 +99,17 @@ $(if $(GCH),\
 $Vif test -f $O/$*.d; then \
 	tmp=`mktemp`; \
 	h=`awk -F: '!$$0 {f = 1} $$0 && f {print $$1}' $O/$*.d`; \
-	grep -h '^#include <' $(call abbr,$<) $$h | sort -u > "$$tmp"; \
-	if diff -q -w "$(call abbr,$O/$*.$1.h)" "$$tmp" > /dev/null 2>&1; \
+	grep -h '^#include <' $< $$h | sort -u > "$$tmp"; \
+	if diff -q -w "$O/$*.$1.h" "$$tmp" > /dev/null 2>&1; \
 	then \
 		rm "$$tmp"; \
 	else \
-		mv "$$tmp" "$(call abbr,$O/$*.$1.h)"; \
+		mv "$$tmp" "$O/$*.$1.h"; \
 		$(call vexec,$(COMPILE.$1) -o "$O/$*.$1.h.gch" "$O/$*.$1.h",\
 				$O/$*.$1.h.gch); \
 	fi \
 else \
-	touch "$(call abbr,$O/$*.$1.h)"; \
+	touch "$O/$*.$1.h"; \
 fi \
 )
 $(call exec,$(COMPILE.$1) -o $@ -MMD -MP $(if $(GCH),-include $O/$*.$1.h) $<)
