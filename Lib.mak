@@ -159,6 +159,16 @@ link = $(call exec,$(LINKER) $(LDFLAGS) $(TARGET_ARCH) -o $@ $1 \
 install_file = $(call exec,install -m $(if $1,$1,0644) $(if $2,$2,-D) \
 		$(if $3,$3,$<) $(if $4,$4,$@))
 
+# Concatenate variables together.  The first argument is a list of variables
+# names to concatenate.  The second argument is an optional prefix for the
+# variables and the third is the string to use as separator (" ~" if omitted).
+# For example:
+# X_A := a
+# X_B := b
+# $(call varcat,A B,X_, --)
+# Will produce something like "a -- b --"
+varcat = $(foreach v,$1,$($2$v)$(if $3,$3, ~))
+
 # Create a symbolic link to the project under the $(INCLUDE_DIR). The first
 # argument is the name of symlink to create.  The link is only created if it
 # doesn't already exist.
@@ -302,14 +312,13 @@ setup_build_dir__ := $(shell \
 ######################################################
 
 # Re-compile C files if one of this variables changes
-COMPILE.c.FLAGS += $(CC) ~ $(CPPFLAGS) ~ $(CFLAGS) ~ $(TARGET_ARCH) ~ $(prefix)
+COMPILE.c.FLAGS := $(call varcat,CC CPPFLAGS CFLAGS TARGET_ARCH prefix)
 
 # Re-compile C++ files if one of this variables changes
-COMPILE.cpp.FLAGS += $(CXX) ~ $(CPPFLAGS) ~ $(CXXFLAGS) ~ $(TARGET_ARCH) \
-		~ $(prefix)
+COMPILE.cpp.FLAGS := $(call varcat,CXX CPPFLAGS CXXFLAGS TARGET_ARCH prefix)
 
 # Re-link binaries and libraries if one of this variables changes
-LINK.o.FLAGS += $(LD) ~ $(LDFLAGS) ~ $(TARGET_ARCH)
+LINK.o.FLAGS := $(call varcat,LD LDFLAGS TARGET_ARCH)
 
 # Create files containing the current flags to trigger a rebuild if they change
 setup_flag_files__ := $(call gen_rebuild_flags,$G/compile-c-flags, \
