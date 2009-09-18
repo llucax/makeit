@@ -1,6 +1,6 @@
 
-#include <remake/lib1/lib1.h>
-#include <remake/lib2/lib2.h>
+#include <makeit/lib1/lib1.h>
+#include <makeit/lib2/lib2.h>
 
 #include <iostream>
 

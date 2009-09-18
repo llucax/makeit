@@ -13,5 +13,5 @@ install += $I/lib/liblib1.so
 
 # Install the library's headers
 # XXX: we can't use += here, call will be resolved lazily if we do
-install := $(install) $(call find_headers,h,$I/include/remake/lib1)
+install := $(install) $(call find_headers,h,$I/include/makeit/lib1)
 

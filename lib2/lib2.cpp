@@ -2,7 +2,7 @@
 #include "lib2.h"
 
 #include <otherproj/otherproj.h>
-#include <remake/lib1/lib1.h>
+#include <makeit/lib1/lib1.h>
 
 #include <stdio.h>
 

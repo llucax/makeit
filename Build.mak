@@ -1,9 +1,9 @@
 
 # Create the include directory symlink
-setup_include_dir__ := $(call symlink_include_dir,remake)
+setup_include_dir__ := $(call symlink_include_dir,makeit)
 
 # General rule to install headers of this project
-$I/include/remake/%.h: $T/%.h
+$I/include/makeit/%.h: $T/%.h
 	$(call install_file)
 
 # Include sub-directories makefiles
