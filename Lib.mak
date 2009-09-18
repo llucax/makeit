@@ -20,12 +20,25 @@ F ?= opt
 # Use C++ linker by default
 LINKER := $(CXX)
 
+# Default mode used to install files
+IMODE ?= 0644
+
+# Degault install flags
+IFLAGS ?= -D
+
 # Use precompiled headers if non-empty
 GCH ?=
 
 
 # Directories
 ##############
+
+# Base directory where to install files (can be overrided, should be absolute)
+prefix ?= /usr/local
+
+# Path to a complete alternative environment, usually a jail, or an installed
+# system mounted elsewhere than /.
+DESTDIR ?=
 
 # Use absolute paths to avoid problems with automatic dependencies when
 # building from subdirectories
@@ -50,6 +63,8 @@ B ?= $G/bin
 # Libraries directory
 L ?= $G/lib
 
+# Installation directory
+I := $(DESTDIR)$(prefix)
 
 # Includes directory
 INCLUDE_DIR ?= $G/include
@@ -68,6 +83,13 @@ eq = $(if $(subst $1,,$2),,$1)
 # this file. $C should be defined to the path to the current directory relative
 # to the top-level.
 find_objects = $(patsubst $T/%.$1,$O/%.o,$(shell find $T/$C -name '*.$1'))
+
+# Find sources files and get the corresponding object names
+# The first argument should be the sources extension ("c" or "cpp" typically)
+# It expects the variable $T and $O to be defined as commented previously in
+# this file. $C should be defined to the path to the current directory relative
+# to the top-level.
+find_headers = $(patsubst $T/$C/%.$1,$2/%.$1,$(shell find $T/$C -name '*.$1'))
 
 # Abbreviate a file name. Cut the leading part of a file if it match to the $T
 # directory, so it can be displayed as if it were a relative directory. Take
@@ -127,6 +149,13 @@ link = $(call exec,$(LINKER) $(LDFLAGS) $(TARGET_ARCH) -o $@ $1 \
 		$(patsubst $L/lib%.so,-l%,$(filter %.so,$^)) \
 		$(foreach obj,$(filter %.o,$^),$(obj)))
 
+# Install a file. All arguments are optional.  The first argument is the file
+# mode (defaults to 0644).  The second argument are extra flags to the install
+# command (defaults to -D).  The third argument is the source file to install
+# (defaults to $<) and the last one is the destination (defaults to $@).
+install_file = $(call exec,install -m $(if $1,$1,0644) $(if $2,$2,-D) \
+		$(if $3,$3,$<) $(if $4,$4,$@))
+
 # Create a symbolic link to the project under the $(INCLUDE_DIR). The first
 # argument is the name of symlink to create.  The link is only created if it
 # doesn't already exist.
@@ -143,6 +172,9 @@ override CPPFLAGS += -Wall
 
 # Use the includes directories to search for includes
 override CPPFLAGS += -I$(INCLUDE_DIR)
+
+# Let the program know where it will be installed
+override CPPFLAGS += -DPREFIX=$(prefix)
 
 # Be standard compilant
 override CFLAGS += -std=c99 -pedantic
@@ -196,9 +228,23 @@ $L/%.so: override CXXFLAGS += -fPIC
 $L/%.so: $G/link-o-flags
 	$(call link,-shared)
 
+$I/bin/%:
+	$(call install_file,0755)
+
+$I/sbin/%:
+	$(call install_file,0755)
+
+$I/lib/%:
+	$(call install_file)
+
 .PHONY: clean
 clean:
 	$(call exec,$(RM) -r $D,$D)
+
+# Phony rule to uninstall all built targets (like "install", uses $(install)).
+.PHONY: uninstall
+uninstall:
+	$V$(foreach i,$(install),$(call vexec,$(RM) $i,$i);)
 
 # These rules use the "Secondary Expansion" GNU Make feature, to allow
 # sub-makes to add values to the special variables $(all), after this makefile
@@ -210,10 +256,14 @@ clean:
 .PHONY: all
 all: $$(all)
 
+# Phony rule to install all built targets (sub-makefiles can append targets to
+# build to the $(install) variable).
+.PHONY: install
+install: $$(install)
+
 
 # Create build directory structure
 ###################################
-
 
 # Create $O, $B, $L and $(INCLUDE_DIR) directories and replicate the directory
 # structure of the project into $O. Create one symlink "last" to the current
@@ -233,10 +283,11 @@ setup_build_dir__ := $(shell \
 ######################################################
 
 # Re-compile C files if one of this variables changes
-COMPILE.c.FLAGS += $(CC) ~ $(CPPFLAGS) ~ $(CFLAGS) ~ $(TARGET_ARCH)
+COMPILE.c.FLAGS += $(CC) ~ $(CPPFLAGS) ~ $(CFLAGS) ~ $(TARGET_ARCH) ~ $(prefix)
 
 # Re-compile C++ files if one of this variables changes
-COMPILE.cpp.FLAGS += $(CXX) ~ $(CPPFLAGS) ~ $(CXXFLAGS) ~ $(TARGET_ARCH)
+COMPILE.cpp.FLAGS += $(CXX) ~ $(CPPFLAGS) ~ $(CXXFLAGS) ~ $(TARGET_ARCH) \
+		~ $(prefix)
 
 # Re-link binaries and libraries if one of this variables changes
 LINK.o.FLAGS += $(LD) ~ $(LDFLAGS) ~ $(TARGET_ARCH)
