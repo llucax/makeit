@@ -9,13 +9,14 @@ $I/include/makeit/%.h: $T/%.h
 # Include sub-directories makefiles
 
 S := subproj
-include $T/subproj/Build.mak
+include $T/$S/Build.mak
 
 S := lib1
-include $T/lib1/Build.mak
+include $T/$S/Build.mak
 
 S := lib2
-include $T/lib2/Build.mak
+include $T/$S/Build.mak
 
 S := prog
-include $T/prog/Build.mak
+include $T/$S/Build.mak
+
