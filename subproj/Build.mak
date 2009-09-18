@@ -35,6 +35,6 @@ $I/include/otherproj/%.h: $C/%.h
 # XXX: we can't use += here, call will be resolved lazily if we do
 install := $(install) $(call find_headers,h,$I/include/otherproj)
 
-# Create the include directory symlink and pkg-config flags file
+# Create the include directory symbolic link and pkg-config flags file
 setup_include_dir__ := $(call symlink_include_dir,otherproj)
 

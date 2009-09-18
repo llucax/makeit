@@ -1,5 +1,5 @@
 
-# Create the include directory symlink
+# Create the include directory symbolic link
 setup_include_dir__ := $(call symlink_include_dir,makeit)
 
 # General rule to install headers of this project

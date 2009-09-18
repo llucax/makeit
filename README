@@ -7,15 +7,13 @@ build system through Config.mak, and specially to show how a project can be
 "embedded" into another tweaking the Config.mak.
 
 lib1 is a standalone C library compiled into a shared object.  lib2 is another
-shared library which uses lib1 and subproj, which is a standalone project
-"embedded" into this one. subproj produces another standalone shared object.
-Finally, prog is a program which uses lib1 and lib2.
+shared library which uses lib1 and otherproj, which is a standalone project
+(living in the "subproj" subdirectory) "embedded" into this one. otherproj
+produces another standalone shared object.  Finally, prog is a program which
+uses lib1 and lib2.
 
-Every project have it's copy of Lib.mak and it's own Toplevel.mak, which has
-some global permanent configuration (which doesn't depends on users taste, it
-just have information about the project, like it's name, and does the work to
-include Lib.mak, etc.). Lib.mak shouldn't be modified ever (unless you're
-hacking the build system) and Toplevel.mak should be changes very rarely.
+Every project have it's copy of Lib.mak and it's own Toplevel.mak. Both files
+shouldn't be modified ever (unless you're hacking the build system).
 
 Then each directory containing some library or program to build (or directories
 to include) has a Build.mak, which has only the logic to build the

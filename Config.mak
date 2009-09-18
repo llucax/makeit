@@ -5,6 +5,6 @@ F := dbg
 # C compiler
 CC := gcc
 
-# Use precompiled headers
+# Use pre-compiled headers
 GCH := 1
 

@@ -1,7 +1,7 @@
 ifndef Lib.mak.included
 Lib.mak.included := 1
 
-# These variables should be provided by the includer Makefile:
+# These variables should be provided by the Makefile that include us:
 # P should be the project name, mostly used to handle include directories
 # T should be the path to the top-level directory.
 # S should be sub-directory where the current makefile is, relative to $T.
@@ -23,17 +23,17 @@ LINKER := $(CXX)
 # Default mode used to install files
 IMODE ?= 0644
 
-# Degault install flags
+# Default install flags
 IFLAGS ?= -D
 
-# Use precompiled headers if non-empty
+# Use pre-compiled headers if non-empty
 GCH ?=
 
 
 # Directories
 ##############
 
-# Base directory where to install files (can be overrided, should be absolute)
+# Base directory where to install files (can be overridden, should be absolute)
 prefix ?= /usr/local
 
 # Path to a complete alternative environment, usually a jail, or an installed
@@ -53,7 +53,7 @@ D ?= $T/build
 # Generated files top directory
 G ?= $D/$F
 
-# Objects (and other garbage like precompiled headers and dependency files)
+# Objects (and other garbage like pre-compiled headers and dependency files)
 # directory
 O ?= $G/obj
 
@@ -82,11 +82,17 @@ C = $T/$S
 # returns empty.
 eq = $(if $(subst $1,,$2),,$1)
 
-# Find sources files and get the corresponding object names
-# The first argument should be the sources extension ("c" or "cpp" typically)
-# It expects the variable $T and $O to be defined as commented previously in
-# this file.
-find_objects = $(patsubst $T/%.$1,$O/%.o,$(shell find $C -name '*.$1'))
+# Find sources files and get the corresponding object names.  The first
+# argument should be the sources extension ("c" or "cpp" typically).  The
+# second argument is where to search for the sources ($C if omitted).  The
+# resulting files will always have the suffix "o" and the directory rewritten
+# to match the directory structure (from $T) but in the $O directory.  For
+# example, if $T is "/usr/src", $O is "/tmp/obj", $C is "/usr/src/curr" and it
+# have 2 C sources: "/usr/src/curr/1.c" and "/usr/src/curr/dir/2.c", the call:
+# $(call find_objects,c)
+# Will yield "/tmp/obj/curr/1.o" and "/tmp/obj/curr/dir/2.o".
+find_objects = $(patsubst $T/%.$1,$O/%.o,$(shell \
+		find $(if $2,$2,$C) -name '*.$1'))
 
 # Find sources files and get the corresponding object names
 # The first argument should be the sources extension ("c" or "cpp" typically)
@@ -143,7 +149,7 @@ endef
 # Link object files to build an executable. The objects files are taken from
 # the prerequisite files ($O/%.o). If in the prerequisite files are shared
 # objects ($L/lib%.so), they are included as libraries to link to (-l%). This
-# function is designed to be used as a command in a rule. The ouput name is
+# function is designed to be used as a command in a rule. The output name is
 # taken from the rule automatic variables. If an argument is provided, it's
 # included in the link command line. The variable LINKER is used to link the
 # executable; for example, if you want to link a C++ executable, you should use
@@ -184,8 +190,8 @@ replace = $(call exec,sed '$(foreach v,$1,s|@$v@|$($2$v)|$5;)' $(if $3,$3,$<) \
 		> $(if $4,$4,$@))
 
 # Create a symbolic link to the project under the $(INCLUDE_DIR). The first
-# argument is the name of symlink to create.  The link is only created if it
-# doesn't already exist.
+# argument is the name of symbolic link to create.  The link is only created if
+# it doesn't already exist.
 symlink_include_dir = $(shell \
 		test -L $(INCLUDE_DIR)/$1 \
 			|| ln -s $C $(INCLUDE_DIR)/$1 )
@@ -200,7 +206,7 @@ gen_rebuild_flags = $(shell if test x"$2" != x"`cat $1 2>/dev/null`"; then \
 		echo "$2" > $1 ; fi)
 
 
-# Overrided flags
+# Overridden flags
 ##################
 
 # Warn about everything
@@ -212,7 +218,7 @@ override CPPFLAGS += -I$(INCLUDE_DIR)
 # Let the program know where it will be installed
 override CPPFLAGS += -DPREFIX=$(prefix)
 
-# Be standard compilant
+# Be standard compliant
 override CFLAGS += -std=c99 -pedantic
 override CXXFLAGS += -std=c++98 -pedantic
 
@@ -301,7 +307,7 @@ uninstall:
 # sub-makes to add values to the special variables $(all), after this makefile
 # was read.
 .SECONDEXPANSION:
-  
+
 # Phony rule to make all the targets (sub-makefiles can append targets to build
 # to the $(all) variable).
 .PHONY: all
@@ -317,8 +323,8 @@ install: $$(install)
 ###################################
 
 # Create $O, $B, $L and $(INCLUDE_DIR) directories and replicate the directory
-# structure of the project into $O. Create one symlink "last" to the current
-# build directory.
+# structure of the project into $O. Create one symbolic link "last" to the
+# current build directory.
 #
 # NOTE: the second mkdir can yield no arguments if the project don't have any
 #       subdirectories, that's why the current directory "." is included, so it
