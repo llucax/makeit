@@ -47,11 +47,11 @@ T := $(abspath $T)
 # Name of the current directory, relative to $T
 R := $(subst $T,,$(patsubst $T/%,%,$(CURDIR)))
 
-# Base directory where to put variants
-D ?= $T/build
+# Base directory where to put variants (Variants Directory)
+VD ?= $T/build
 
 # Generated files top directory
-G ?= $D/$F
+G ?= $(VD)/$F
 
 # Objects (and other garbage like pre-compiled headers and dependency files)
 # directory
@@ -296,7 +296,7 @@ $I/lib/%:
 
 .PHONY: clean
 clean:
-	$(call exec,$(RM) -r $D,$D)
+	$(call exec,$(RM) -r $(VD),$(VD))
 
 # Phony rule to uninstall all built targets (like "install", uses $(install)).
 .PHONY: uninstall
@@ -332,8 +332,8 @@ install: $$(install)
 setup_build_dir__ := $(shell \
 	mkdir -p $O $B $L $(INCLUDE_DIR); \
 	mkdir -p . $(addprefix $O,$(patsubst $T%,%,\
-			$(shell find $T -type d -not -path '$D*'))); \
-	test -L $D/last || ln -s $F $D/last )
+			$(shell find $T -type d -not -path '$(VD)*'))); \
+	test -L $(VD)/last || ln -s $F $(VD)/last )
 
 
 # Automatic rebuilding when flags or commands changes
