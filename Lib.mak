@@ -166,6 +166,15 @@ symlink_include_dir = $(shell \
 		test -L $(INCLUDE_DIR)/$1 \
 			|| ln -s $C $(INCLUDE_DIR)/$1 )
 
+# Create a file with flags used to trigger rebuilding when they change. The
+# first argument is the name of the file where to store the flags, the second
+# are the flags and the third argument is a text to be displayed if the flags
+# have changed (optional).  This should be used as a rule action or something
+# where a shell script is expected.
+gen_rebuild_flags = $(shell if test x"$2" != x"`cat $1 2>/dev/null`"; then \
+		$(if $3,test -f $1 && echo "$3";) \
+		echo "$2" > $1 ; fi)
+
 
 # Overrided flags
 ##################
@@ -302,27 +311,17 @@ COMPILE.cpp.FLAGS += $(CXX) ~ $(CPPFLAGS) ~ $(CXXFLAGS) ~ $(TARGET_ARCH) \
 # Re-link binaries and libraries if one of this variables changes
 LINK.o.FLAGS += $(LD) ~ $(LDFLAGS) ~ $(TARGET_ARCH)
 
-# Create a file with flags used to trigger rebuilding when they change. The
-# first argument is the name of the file where to store the flags, the second
-# are the flags and the third argument is a text to be displayed if the flags
-# have changed.  This should be used as a rule action or something where
-# a shell script is expected.
-gen_rebuild_flags = if test x"$2" != x"`cat $1 2>/dev/null`"; then \
-		test -f $1 && echo "$3"; \
-		echo "$2" > $1 ; fi
-
 # Create files containing the current flags to trigger a rebuild if they change
-setup_flag_files__ := $(shell \
-	$(call gen_rebuild_flags,$G/compile-c-flags, \
-			$(COMPILE.c.FLAGS),C compiler or flags;); \
-	$(call gen_rebuild_flags,$G/compile-cpp-flags, \
-			$(COMPILE.cpp.FLAGS),C++ compiler or flags;); \
-	$(call gen_rebuild_flags,$G/link-o-flags, \
-			$(LINK.o.FLAGS),linker or link flags;) )
+setup_flag_files__ := $(call gen_rebuild_flags,$G/compile-c-flags, \
+	$(COMPILE.c.FLAGS),C compiler or flags; )
+setup_flag_files__ := $(setup_flag_files__)$(call gen_rebuild_flags, \
+	$G/compile-cpp-flags, $(COMPILE.cpp.FLAGS),C++ compiler or flags; )
+setup_flag_files__ := $(setup_flag_files__)$(call gen_rebuild_flags, \
+	$G/link-o-flags, $(LINK.o.FLAGS),linker or link flags; )
 
 # Print any generated message (if verbose)
 $(if $V,$(if $(setup_flag_files__), \
-	$(info !! Something changed: $(setup_flag_files__) \
-			re-building affected files...)))
+	$(info !! Something changed: $(setup_flag_files__)re-building \
+			affected files...)))
 
 endif
