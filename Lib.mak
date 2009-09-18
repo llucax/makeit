@@ -217,26 +217,33 @@ sinclude $(shell test -d $O && find $O -name '*.d')
 # Default rules
 ################
 
+# Compile C objects
 $O/%.o: $T/%.c $G/compile-c-flags
 	$(call compile,c)
 
+# Compile C++ objects
 $O/%.o: $T/%.cpp $G/compile-cpp-flags
 	$(call compile,cpp)
 
+# Link binary programs
 $B/%: $G/link-o-flags
 	$(call link)
 
+# Link shared libraries
 $L/%.so: override CFLAGS += -fPIC
 $L/%.so: override CXXFLAGS += -fPIC
 $L/%.so: $G/link-o-flags
 	$(call link,-shared)
 
+# Install binary programs
 $I/bin/%:
 	$(call install_file,0755)
 
+# Install system binary programs
 $I/sbin/%:
 	$(call install_file,0755)
 
+# Install libraries
 $I/lib/%:
 	$(call install_file)
 
