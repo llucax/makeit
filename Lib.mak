@@ -4,7 +4,7 @@ Lib.mak.included := 1
 # These variables should be provided by the includer Makefile:
 # P should be the project name, mostly used to handle include directories
 # T should be the path to the top-level directory.
-# C should be the path to the current directory.
+# S should be sub-directory where the current makefile is, relative to $T.
 
 # Verbosity flag (empty show nice messages, non-empty use make messages)
 # When used internal, $V expand to @ is nice messages should be printed, this
@@ -69,6 +69,11 @@ I := $(DESTDIR)$(prefix)
 # Includes directory
 INCLUDE_DIR ?= $G/include
 
+# Directory of the current makefile (this might not be the same as $(CURDIR)
+# This variable is "lazy" because $S changes all the time, so it should be
+# evaluated in the context where $C is used, not here.
+C = $T/$S
+
 
 # Functions
 ############
@@ -80,16 +85,14 @@ eq = $(if $(subst $1,,$2),,$1)
 # Find sources files and get the corresponding object names
 # The first argument should be the sources extension ("c" or "cpp" typically)
 # It expects the variable $T and $O to be defined as commented previously in
-# this file. $C should be defined to the path to the current directory relative
-# to the top-level.
-find_objects = $(patsubst $T/%.$1,$O/%.o,$(shell find $T/$C -name '*.$1'))
+# this file.
+find_objects = $(patsubst $T/%.$1,$O/%.o,$(shell find $C -name '*.$1'))
 
 # Find sources files and get the corresponding object names
 # The first argument should be the sources extension ("c" or "cpp" typically)
 # It expects the variable $T and $O to be defined as commented previously in
-# this file. $C should be defined to the path to the current directory relative
-# to the top-level.
-find_headers = $(patsubst $T/$C/%.$1,$2/%.$1,$(shell find $T/$C -name '*.$1'))
+# this file.
+find_headers = $(patsubst $C/%.$1,$2/%.$1,$(shell find $C -name '*.$1'))
 
 # Abbreviate a file name. Cut the leading part of a file if it match to the $T
 # directory, so it can be displayed as if it were a relative directory. Take
@@ -161,7 +164,7 @@ install_file = $(call exec,install -m $(if $1,$1,0644) $(if $2,$2,-D) \
 # doesn't already exist.
 symlink_include_dir = $(shell \
 		test -L $(INCLUDE_DIR)/$1 \
-			|| ln -s $T/$C $(INCLUDE_DIR)/$1 )
+			|| ln -s $C $(INCLUDE_DIR)/$1 )
 
 
 # Overrided flags

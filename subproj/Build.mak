@@ -16,7 +16,7 @@ $I/lib/libotherproj.so: $L/libotherproj.so
 install += $I/lib/libotherproj.so
 
 # Install the library's headers
-$I/include/otherproj/%.h: $T/$C/%.h
+$I/include/otherproj/%.h: $C/%.h
 	$(call install_file)
 # XXX: we can't use += here, call will be resolved lazily if we do
 install := $(install) $(call find_headers,h,$I/include/otherproj)
