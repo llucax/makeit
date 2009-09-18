@@ -58,6 +58,10 @@ INCLUDE_DIR ?= $G/include
 # Functions
 ############
 
+# Compare two strings, if they are the same, returns the string, if not,
+# returns empty.
+eq = $(if $(subst $1,,$2),,$1)
+
 # Find sources files and get the corresponding object names
 # The first argument should be the sources extension ("c" or "cpp" typically)
 # It expects the variable $T and $O to be defined as commented previously in
@@ -68,8 +72,10 @@ find_objects = $(patsubst $T/%.$1,$O/%.o,$(shell find $T/$C -name '*.$1'))
 # Abbreviate a file name. Cut the leading part of a file if it match to the $T
 # directory, so it can be displayed as if it were a relative directory. Take
 # just one argument, the file name.
-abbr = $(addprefix $(shell echo $R | sed 's|/\?\([^/]\+\)/\?|../|g'),\
-		$(subst $T,.,$(patsubst $T/%,%,$1)))
+abbr_helper = $(subst $T,.,$(patsubst $T/%,%,$1))
+abbr = $(if $(call eq,$(call abbr_helper,$1),$1),$1, \
+	$(addprefix $(shell echo $R | sed 's|/\?\([^/]\+\)/\?|../|g'),\
+		$(call abbr_helper,$1)))
 
 # Execute a command printing a nice message if $V is @.
 # The first argument is mandatory and it's the command to execute. The second
