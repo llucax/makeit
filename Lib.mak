@@ -63,6 +63,9 @@ B ?= $G/bin
 # Libraries directory
 L ?= $G/lib
 
+# Documentation directory
+D ?= $(VD)/doc
+
 # Installation directory
 I := $(DESTDIR)$(prefix)
 
@@ -281,6 +284,23 @@ $L/%.so: $G/link-o-flags
 $L/%.pc:
 	$(call replace,$(PC_VARS),$*-PC-)
 
+# Run doxygen to build the documentation.  It expects the first prerequisite to
+# be the Doxyfile to use and the next prerequisites the input files.  This rule
+# is a little restrictive, but you can always make your own if it doesn't fit
+# your needs ;)
+$D/%/doxygen-stamp:
+	$V mkdir -p $(@D)
+	$(call exec,(cat $<; \
+		echo "FULL_PATH_NAMES=YES"; \
+		echo "INPUT=$(patsubst $(<D)/%,$(INCLUDE_DIR)/$*/%, \
+				$(wordlist 2,$(words $^),$^))"; \
+		echo "OUTPUT_DIRECTORY=$(@D)"; \
+		echo "INCLUDE_PATH=$(INCLUDE_DIR)"; \
+		echo "STRIP_FROM_PATH=$(INCLUDE_DIR)"; \
+		echo "STRIP_FROM_INC_PATH=$(INCLUDE_DIR)"; \
+		echo "QUIET=$(if $V,YES,NO)") | doxygen -,$(@D),doxygen)
+	$V touch $@
+
 # Install binary programs
 $I/bin/%:
 	$(call install_file,0755)
@@ -321,19 +341,24 @@ all: $$(all)
 .PHONY: install
 install: $$(install)
 
+# Phony rule to build all documentation targets (sub-makefiles can append
+# documentation to build to the $(doc) variable).
+.PHONY: doc
+doc: $$(doc)
+
 
 # Create build directory structure
 ###################################
 
-# Create $O, $B, $L and $(INCLUDE_DIR) directories and replicate the directory
-# structure of the project into $O. Create one symbolic link "last" to the
-# current build directory.
+# Create $O, $B, $L, $D and $(INCLUDE_DIR) directories and replicate the
+# directory structure of the project into $O. Create one symbolic link "last"
+# to the current build directory.
 #
 # NOTE: the second mkdir can yield no arguments if the project don't have any
 #       subdirectories, that's why the current directory "." is included, so it
 #       won't show an error message in case of no subdirectories.
 setup_build_dir__ := $(shell \
-	mkdir -p $O $B $L $(INCLUDE_DIR); \
+	mkdir -p $O $B $L $D $(INCLUDE_DIR); \
 	mkdir -p . $(addprefix $O,$(patsubst $T%,%,\
 			$(shell find $T -type d -not -path '$(VD)*'))); \
 	test -L $(VD)/last || ln -s $F $(VD)/last )
