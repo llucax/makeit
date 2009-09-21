@@ -33,7 +33,7 @@ otherproj: $L/libotherproj.so
 $I/include/otherproj/%.h: $C/%.h
 	$(call install_file)
 # XXX: we can't use += here, call will be resolved lazily if we do
-install := $(install) $(call find_headers,h,$I/include/otherproj)
+install := $(install) $(call find_files,.h,$I/include/otherproj)
 
 # Create the include directory symbolic link and pkg-config flags file
 setup_include_dir__ := $(call symlink_include_dir,otherproj)

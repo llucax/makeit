@@ -13,5 +13,5 @@ install += $I/lib/liblib2.so
 
 # Install the library's headers
 # XXX: we can't use += here, call will be resolved lazily if we do
-install := $(install) $(call find_headers,h,$I/include/makeit/lib2)
+install := $(install) $(call find_files,.h,$I/include/makeit/lib2)
 

@@ -94,11 +94,14 @@ eq = $(if $(subst $1,,$2),,$1)
 find_objects = $(patsubst $T/%.$1,$O/%.o,$(shell \
 		find $(if $2,$2,$C) -name '*.$1'))
 
-# Find sources files and get the corresponding object names
-# The first argument should be the sources extension ("c" or "cpp" typically)
-# It expects the variable $T and $O to be defined as commented previously in
-# this file.
-find_headers = $(patsubst $C/%.$1,$2/%.$1,$(shell find $C -name '*.$1'))
+# Find files and get the their file names relative to another directory.  The
+# first argument should be the files suffix (".h" or ".cpp" for example).  The
+# second argument is a directory rewrite, the matched files will be rewriten to
+# be in the directory specified in this argument (it defaults to the third
+# argument if omitted).  The third argument is where to search for the files
+# ($C if omitted).
+find_files = $(patsubst $(if $3,$3,$C)/%$1,$(if $2,$2,$(if $3,$3,$C))/%$1, \
+		$(shell find $(if $3,$3,$C) -name '*$1'))
 
 # Abbreviate a file name. Cut the leading part of a file if it match to the $T
 # directory, so it can be displayed as if it were a relative directory. Take
