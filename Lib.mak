@@ -119,7 +119,7 @@ abbr = $(if $(call eq,$(call abbr_helper,$1),$1),$1,$(addprefix \
 # and third arguments are optional and are the target name and command name to
 # pretty print.
 vexec = $(if $V,\
-		echo '   $(notdir $(if $3,$(strip $3),$(firstword $1))) \
+		echo '   $(call abbr,$(if $3,$(strip $3),$(firstword $1))) \
 				$(call abbr,$(if $2,$(strip $2),$@))' ; )$1
 
 # Same as vexec but it silence the echo command (prepending a @ if $V).
