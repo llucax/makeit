@@ -358,6 +358,11 @@ install: $$(install)
 .PHONY: doc
 doc: $$(doc)
 
+# Phony rule to build and run all test (sub-makefiles can append targets to
+# build and run tests to the $(test) variable).
+.PHONY: test
+test: $$(test)
+
 
 # Create build directory structure
 ###################################
