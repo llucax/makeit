@@ -211,6 +211,18 @@ gen_rebuild_flags = $(shell if test x"$2" != x"`cat $1 2>/dev/null`"; then \
 		$(if $3,test -f $1 && echo "$3";) \
 		echo "$2" > $1 ; fi)
 
+# Include sub-directory's Build.mak.  The only argument is a list of
+# subdirectories for which Build.mak should be included.  The $S directory is
+# set properly before including each sub-directory's Build.mak and restored
+# afterwards.
+define build_subdir_code
+_parent__$d__dir_ := $$S
+S := $$(if $$(_parent__$d__dir_),$$(_parent__$d__dir_)/$d,$d)
+include $$T/$$S/Build.mak
+S := $$(_parent__$d__dir_)
+endef
+include_subdirs = $(foreach d,$1,$(eval $(build_subdir_code)))
+
 
 # Overridden flags
 ##################

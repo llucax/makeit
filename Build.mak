@@ -7,16 +7,5 @@ $I/include/makeit/%.h: $T/%.h
 	$(call install_file)
 
 # Include sub-directories makefiles
-
-S := subproj
-include $T/$S/Build.mak
-
-S := lib1
-include $T/$S/Build.mak
-
-S := lib2
-include $T/$S/Build.mak
-
-S := prog
-include $T/$S/Build.mak
+$(call include_subdirs,subproj lib1 lib2 prog)
 
