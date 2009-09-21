@@ -110,8 +110,8 @@ find_files = $(patsubst $(if $3,$3,$C)/%$1,$(if $2,$2,$(if $3,$3,$C))/%$1, \
 # directory, so it can be displayed as if it were a relative directory. Take
 # just one argument, the file name.
 abbr_helper = $(subst $T,.,$(patsubst $T/%,%,$1))
-abbr = $(if $(call eq,$(call abbr_helper,$1),$1),$1, \
-	$(addprefix $(shell echo $R | sed 's|/\?\([^/]\+\)/\?|../|g'),\
+abbr = $(if $(call eq,$(call abbr_helper,$1),$1),$1,$(addprefix \
+		$(shell echo $R | sed 's|/\?\([^/]\+\)/\?|../|g'),\
 		$(call abbr_helper,$1)))
 
 # Execute a command printing a nice message if $V is @.
