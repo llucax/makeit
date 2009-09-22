@@ -12,8 +12,8 @@ shared library which uses lib1 and otherproj, which is a standalone project
 produces another standalone shared object.  Finally, prog is a program which
 uses lib1 and lib2.
 
-Every project have it's copy of Lib.mak and it's own Toplevel.mak. Both files
-shouldn't be modified ever (unless you're hacking the build system).
+Every project have it's copy of Makeit.mak and it's own Toplevel.mak. Both
+files shouldn't be modified ever (unless you're hacking the build system).
 
 Then each directory containing some library or program to build (or directories
 to include) has a Build.mak, which has only the logic to build the

@@ -1,5 +1,5 @@
-ifndef Lib.mak.included
-Lib.mak.included := 1
+ifndef Makeit.mak.included
+Makeit.mak.included := 1
 
 # These variables should be provided by the Makefile that include us:
 # P should be the project name, mostly used to handle include directories

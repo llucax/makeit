@@ -5,7 +5,7 @@ Toplevel.mak.included := 1
 sinclude $T/Config.mak
 
 # Include the build system library
-include $T/Lib.mak
+include $T/Makeit.mak
 
 # Include the Build.mak for this directory
 include $T/Build.mak
