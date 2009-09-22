@@ -29,6 +29,17 @@ IFLAGS ?= -D
 # Use pre-compiled headers if non-empty
 GCH ?=
 
+# If non-empty, use valgrind to run commands via the "valgrind" function
+VALGRIND ?=
+
+# Options to pass to valgrind; if the variable $(VALGRIND_SUPP) is non-empty
+# it will be used as a suppressions file.
+VALGRIND_CMD ?= valgrind --tool=memcheck --leak-check=yes --db-attach=no \
+		--num-callers=24 --leak-resolution=high --track-fds=yes \
+		--error-exitcode=1 \
+		$(if $V,--log-file=$<.valgrind.log) \
+		$(if $(VALGRIND_SUPP),--suppressions=$(VALGRIND_SUPP))
+
 
 # Directories
 ##############
@@ -222,6 +233,15 @@ include $$T/$$S/Build.mak
 S := $$(_parent__$d__dir_)
 endef
 include_subdirs = $(foreach d,$1,$(eval $(build_subdir_code)))
+
+# Run a command through valgrind if $(VALGRIND) is non-empty.  The first and
+# only argument is the command to.  If $(VALGRIND) is empty, the command is
+# executed as passed to this function.  If valgrind is used, the
+# $(VALGRIND_CMD) is prepended to the command to run.  See VALGRIND_CMD
+# definition for extra options that can be passed as make variables.
+valgrind = $(call exec,$(if $(VALGRIND),$(VALGRIND_CMD)) $1,\
+		$(if $(VALGRIND),[$(firstword $(VALGRIND_CMD))], ),\
+		$(firstword $1))
 
 
 # Overridden flags
