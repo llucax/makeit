@@ -40,6 +40,16 @@ VALGRIND_CMD ?= valgrind --tool=memcheck --leak-check=yes --db-attach=no \
 		$(if $V,--log-file=$<.valgrind.log) \
 		$(if $(VALGRIND_SUPP),--suppressions=$(VALGRIND_SUPP))
 
+# Command to generate Sphinx based documentation
+SPHINX ?= sphinx-build
+
+# Format to build using Sphinx (html, pickle, htmlhelp, latex, changes or
+# linkcheck; see sphinx-build docs for details)
+SPHINX_FORMAT ?= html
+
+# Paper size for Sphinx LaTeX output (a4, letter, etc.)
+SPHINX_PAPERSIZE ?= a4
+
 
 # Directories
 ##############
@@ -333,6 +343,17 @@ $D/%/doxygen-stamp:
 		echo "QUIET=$(if $V,YES,NO)") | doxygen -,$(@D),doxygen)
 	$V touch $@
 
+# Run Sphinx to build the documentation.  It expects the variable SPHINX_DIR
+# to be set to the directory where the Sphinx's conf.py and reST source files
+# are.  This rule is a little restrictive, but you can always make your own if
+# it doesn't fit your needs ;)
+$D/%/sphinx-stamp: $G/sphinx-flags
+	$V mkdir -p $(@D)/$(SPHINX_FORMAT)
+	$(call exec,$(SPHINX) $(if $V,-q) -b $(SPHINX_FORMAT) \
+		-d $(@D)/doctrees -D latex_paper_size=$(SPHINX_PAPERSIZE) \
+		$(SPHINX_DIR) $(@D)/$(SPHINX_FORMAT),$(@D),$(SPHINX))
+	$V touch $@
+
 # Install binary programs
 $I/bin/%:
 	$(call install_file,0755)
@@ -413,6 +434,9 @@ COMPILE.cpp.FLAGS := $(call varcat,CXX CPPFLAGS CXXFLAGS TARGET_ARCH prefix)
 # Re-link binaries and libraries if one of this variables changes
 LINK.o.FLAGS := $(call varcat,LD LDFLAGS TARGET_ARCH)
 
+# Re-build sphinx documentation if one of these variables changes
+SPHINX.FLAGS := $(call varcat,SPHINX SPHINX_FORMAT SPHINX_PAPERSIZE)
+
 # Create files containing the current flags to trigger a rebuild if they change
 setup_flag_files__ := $(call gen_rebuild_flags,$G/compile-c-flags, \
 	$(COMPILE.c.FLAGS),C compiler or flags; )
@@ -420,6 +444,8 @@ setup_flag_files__ := $(setup_flag_files__)$(call gen_rebuild_flags, \
 	$G/compile-cpp-flags, $(COMPILE.cpp.FLAGS),C++ compiler or flags; )
 setup_flag_files__ := $(setup_flag_files__)$(call gen_rebuild_flags, \
 	$G/link-o-flags, $(LINK.o.FLAGS),linker or link flags; )
+setup_flag_files__ := $(setup_flag_files__)$(call gen_rebuild_flags, \
+	$G/sphinx-flags, $(SPHINX.FLAGS),sphinx command or flags; )
 
 # Print any generated message (if verbose)
 $(if $V,$(if $(setup_flag_files__), \
