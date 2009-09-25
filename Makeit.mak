@@ -250,14 +250,16 @@ S := $$(_parent__$d__dir_)
 endef
 include_subdirs = $(foreach d,$1,$(eval $(build_subdir_code)))
 
-# Run a command through valgrind if $(VALGRIND) is non-empty.  The first and
-# only argument is the command to.  If $(VALGRIND) is empty, the command is
+# Run a command through valgrind if $(VALGRIND) is non-empty.  The first
+# argument is the command to run.  If $(VALGRIND) is empty, the command is
 # executed as passed to this function.  If valgrind is used, the
 # $(VALGRIND_CMD) is prepended to the command to run.  See VALGRIND_CMD
-# definition for extra options that can be passed as make variables.
+# definition for extra options that can be passed as make variables.  The
+# second argument is the name of the command to print when $V is non-empty (if
+# omitted, the first word of the first argument is used).
 valgrind = $(call exec,$(if $(VALGRIND),$(VALGRIND_CMD)) $1,\
 		$(if $(VALGRIND),[$(firstword $(VALGRIND_CMD))], ),\
-		$(firstword $1))
+		$(if $2,$2,$(firstword $1)))
 
 
 # Overridden flags
