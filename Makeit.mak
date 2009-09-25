@@ -151,7 +151,8 @@ exec = $V$(call vexec,$1,$2,$3)
 # includes change. This function is designed to be used as a command in a rule.
 # It takes one argument only, the type of file to compile (typically "c" or
 # "cpp"). What to compile and the output files are built using the automatic
-# variables from a rule.
+# variables from a rule.  You can add non-propagated object-specific flags
+# defining a variable with the name of the target followed with ".EXTRA_FLAGS".
 define compile
 $(if $(GCH),\
 $Vif test -f $O/$*.d; then \
@@ -163,14 +164,15 @@ $Vif test -f $O/$*.d; then \
 		rm "$$tmp"; \
 	else \
 		mv "$$tmp" "$O/$*.$1.h"; \
-		$(call vexec,$(COMPILE.$1) -o "$O/$*.$1.h.gch" "$O/$*.$1.h",\
-				$O/$*.$1.h.gch); \
+		$(call vexec,$(COMPILE.$1) $($@.EXTRA_FLAGS) \
+			-o "$O/$*.$1.h.gch" "$O/$*.$1.h",$O/$*.$1.h.gch); \
 	fi \
 else \
 	touch "$O/$*.$1.h"; \
 fi \
 )
-$(call exec,$(COMPILE.$1) -o $@ -MMD -MP $(if $(GCH),-include $O/$*.$1.h) $<)
+$(call exec,$(COMPILE.$1) $($@.EXTRA_FLAGS) -o $@ -MMD -MP \
+		$(if $(GCH),-include $O/$*.$1.h) $<)
 endef
 
 # Link object files to build an executable. The objects files are taken from
@@ -180,8 +182,12 @@ endef
 # taken from the rule automatic variables. If an argument is provided, it's
 # included in the link command line. The variable LINKER is used to link the
 # executable; for example, if you want to link a C++ executable, you should use
-# LINKER := $(CXX).
-link = $(call exec,$(LINKER) $(LDFLAGS) $(TARGET_ARCH) -o $@ $1 \
+# LINKER := $(CXX).  You can add non-propagated target-specific flags defining
+# a variable with the name of the target followed with ".EXTRA_FLAGS".  You can
+# specify a non-propagated object-specific linker defining a variable with the
+# name of the target followed with ".LINKER".
+link = $(call exec,$(if $($@.LINKER),$($@.LINKER),$(LINKER)) \
+		$(LDFLAGS) $(TARGET_ARCH) $($@.EXTRA_FLAGS) -o $@ $1 \
 		$(patsubst $L/lib%.so,-l%,$(filter %.so,$^)) \
 		$(foreach obj,$(filter %.o,$^),$(obj)))
 
