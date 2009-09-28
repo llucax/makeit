@@ -14,6 +14,22 @@ override V := $(if $V,,@)
 # honour make -s flag
 override V := $(if $(findstring s,$(MAKEFLAGS)),,$V)
 
+# If $V is non-empty, colored output is used if $(COLOR) is non-empty too
+COLOR ?= 1
+
+# ANSI color used for the command if $(COLOR) is non-empty
+# The color is composed with 2 numbers separated by ;
+# The first is the style. 00 is normal, 01 is bold, 04 is underline, 05 blinks,
+# 07 is reversed mode
+# The second is the color: 30 dark gray/black, 31 red, 32 green, 33 yellow, 34
+# blue, 35 magenta, 36 cyan and 37 white.
+# If empty, no special color is used.
+COLOR_CMD ?= 00;33
+
+# ANSI color used for the argument if $(COLOR) is non-empty
+# See COLOR_CMD comment for details.
+COLOR_ARG ?=
+
 # Flavor (variant), should be one of "dbg", "opt" or "cov"
 F ?= opt
 
@@ -139,9 +155,13 @@ abbr = $(if $(call eq,$(call abbr_helper,$1),$1),$1,$(addprefix \
 # The first argument is mandatory and it's the command to execute. The second
 # and third arguments are optional and are the target name and command name to
 # pretty print.
-vexec = $(if $V,\
-		echo '   $(call abbr,$(if $3,$(strip $3),$(firstword $1))) \
-				$(call abbr,$(if $2,$(strip $2),$@))' ; )$1
+vexec_pc = $(if $1,\033[$1m%s\033[00m,%s)
+vexec_p = $(if $(COLOR), \
+	'   $(call vexec_pc,$(COLOR_CMD)) $(call vexec_pc,$(COLOR_ARG))\n', \
+	'   %s %s\n')
+vexec = $(if $V,printf $(vexec_p) \
+		'$(call abbr,$(if $3,$(strip $3),$(firstword $1)))' \
+		'$(call abbr,$(if $2,$(strip $2),$@))' ; )$1
 
 # Same as vexec but it silence the echo command (prepending a @ if $V).
 exec = $V$(call vexec,$1,$2,$3)
