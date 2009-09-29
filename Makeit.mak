@@ -169,30 +169,31 @@ exec = $V$(call vexec,$1,$2,$3)
 # Compile a source file to an object, generating pre-compiled headers and
 # dependencies. The pre-compiled headers are generated only if the system
 # includes change. This function is designed to be used as a command in a rule.
-# It takes one argument only, the type of file to compile (typically "c" or
-# "cpp"). What to compile and the output files are built using the automatic
-# variables from a rule.  You can add non-propagated object-specific flags
-# defining a variable with the name of the target followed with ".EXTRA_FLAGS".
+# The first argument is the type of file to compile (typically "c" or "cpp").
+# What to compile and the output files are built using the automatic variables
+# from a rule.  The second argument is the base output directory (typically
+# $O).  You can add non-propagated object-specific flags defining a variable
+# with the name of the target followed with ".EXTRA_FLAGS".
 define compile
 $(if $(GCH),\
-$Vif test -f $O/$*.d; then \
+$Vif test -f $2/$*.d; then \
 	tmp=`mktemp`; \
-	h=`awk -F: '!$$0 {f = 1} $$0 && f {print $$1}' $O/$*.d`; \
+	h=`awk -F: '!$$0 {f = 1} $$0 && f {print $$1}' $2/$*.d`; \
 	grep -h '^#include <' $< $$h | sort -u > "$$tmp"; \
-	if diff -q -w "$O/$*.$1.h" "$$tmp" > /dev/null 2>&1; \
+	if diff -q -w "$2/$*.$1.h" "$$tmp" > /dev/null 2>&1; \
 	then \
 		rm "$$tmp"; \
 	else \
-		mv "$$tmp" "$O/$*.$1.h"; \
+		mv "$$tmp" "$2/$*.$1.h"; \
 		$(call vexec,$(COMPILE.$1) $($@.EXTRA_FLAGS) \
-			-o "$O/$*.$1.h.gch" "$O/$*.$1.h",$O/$*.$1.h.gch); \
+			-o "$2/$*.$1.h.gch" "$2/$*.$1.h",$2/$*.$1.h.gch); \
 	fi \
 else \
-	touch "$O/$*.$1.h"; \
+	touch "$2/$*.$1.h"; \
 fi \
 )
 $(call exec,$(COMPILE.$1) $($@.EXTRA_FLAGS) -o $@ -MMD -MP \
-		$(if $(GCH),-include $O/$*.$1.h) $<)
+		$(if $(GCH),-include $2/$*.$1.h) $<)
 endef
 
 # Link object files to build an executable. The objects files are taken from
@@ -334,11 +335,11 @@ sinclude $(shell test -d $O && find $O -name '*.d')
 
 # Compile C objects
 $O/%.o: $T/%.c $G/compile-c-flags
-	$(call compile,c)
+	$(call compile,c,$O)
 
 # Compile C++ objects
 $O/%.o: $T/%.cpp $G/compile-cpp-flags
-	$(call compile,cpp)
+	$(call compile,cpp,$O)
 
 # Link binary programs
 $B/%: $G/link-o-flags
