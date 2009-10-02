@@ -172,14 +172,21 @@ vexec = $(if $V,printf $(vexec_p) \
 # Same as vexec but it silence the echo command (prepending a @ if $V).
 exec = $V$(call vexec,$1,$2,$3)
 
-# Compile a source file to an object, generating pre-compiled headers and
-# dependencies. The pre-compiled headers are generated only if the system
-# includes change. This function is designed to be used as a command in a rule.
-# The first argument is the type of file to compile (typically "c" or "cpp").
-# What to compile and the output files are built using the automatic variables
-# from a rule.  The second argument is the base output directory (typically
-# $O).  You can add non-propagated object-specific flags defining a variable
-# with the name of the target followed with ".EXTRA_FLAGS".
+# Compile a source file to an object, generating pre-compiled headers (if
+# $(GCH) is non-empty) and dependencies. The pre-compiled headers are generated
+# only if the system includes change. This function is designed to be used as
+# a command in a rule.  The first argument is the type of file to compile
+# (typically "c" or "cpp").  What to compile and the output files are built
+# using the automatic variables from a rule.  The second argument is the base
+# output directory (typically $O).  You can add non-propagated object-specific
+# flags defining a variable with the name of the target followed with
+# ".EXTRA_FLAGS".
+#
+# XXX: The pre-compiled headers generation is not very useful if you include
+#      local files using #include <...>, because the system headers detection
+#      is a little simplistic now, it just parse the source file and all its
+#      dependencies searching for lines starting with "#include <" and
+#      extracting the included files from them.
 define compile
 $(if $(GCH),\
 $Vif test -f $2/$*.d; then \
