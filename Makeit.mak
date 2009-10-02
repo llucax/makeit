@@ -66,6 +66,12 @@ SPHINX_FORMAT ?= html
 # Paper size for Sphinx LaTeX output (a4, letter, etc.)
 SPHINX_PAPERSIZE ?= a4
 
+# Name of the build directory (to use when excluding some paths)
+BUILD_DIR_NAME ?= build
+
+# Directories to exclude from the build directory tree replication
+BUILD_DIR_EXCLUDE ?= $(BUILD_DIR_NAME) .git .hg .bzr _darcs .svn CVS
+
 
 # Directories
 ##############
@@ -85,7 +91,7 @@ T := $(abspath $T)
 R := $(subst $T,,$(patsubst $T/%,%,$(CURDIR)))
 
 # Base directory where to put variants (Variants Directory)
-VD ?= $T/build
+VD ?= $T/$(BUILD_DIR_NAME)
 
 # Generated files top directory
 G ?= $(VD)/$F
@@ -445,9 +451,9 @@ test: $$(test)
 #       subdirectories, that's why the current directory "." is included, so it
 #       won't show an error message in case of no subdirectories.
 setup_build_dir__ := $(shell \
-	mkdir -p $O $B $L $D $(INCLUDE_DIR); \
-	mkdir -p . $(addprefix $O,$(patsubst $T%,%,\
-			$(shell find $T -type d -not -path '$(VD)*'))); \
+	mkdir -p $O $B $L $D $(INCLUDE_DIR) $(addprefix $O,$(patsubst $T%,%,\
+		$(shell find $T -type d $(foreach d,$(BUILD_DIR_EXCLUDE), \
+				-not -path '*/$d' -not -path '*/$d/*')))); \
 	test -L $(VD)/last || ln -s $F $(VD)/last )
 
 
