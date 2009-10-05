@@ -369,20 +369,34 @@ $L/%.pc:
 	$(call replace,$(PC_VARS),$*-PC-)
 
 # Run doxygen to build the documentation.  It expects the first prerequisite to
-# be the Doxyfile to use and the next prerequisites the input files.  This rule
-# is a little restrictive, but you can always make your own if it doesn't fit
-# your needs ;)
+# be the Doxyfile to use and the next prerequisites the input files.  You
+# can override Doxyfile configuration variables by defining a DOXYGEN_VARS
+# Make variable for this rule.  For example, defining:
+# PROJECT_NAME := myproj
+# DOXYGEN_VARS := PROJECT_NAME
+# You can override Doxygen's PROJECT_NAME configuration option. Optionally, you
+# can define DOXYGEN_VARS_PREFIX too, to avoid polluting your Makefile with
+# Doxygen variables.  For example:
+# DOXY.PROJECT_NAME := myproj
+# DOXYGEN_VARS_PREFIX := DOXY.
+# DOXYGEN_VARS := PROJECT_NAME
+# This rule might be still a little restrictive, but you can always make your
+# own if it doesn't fit your needs ;)
 $D/%/doxygen-stamp:
 	$V mkdir -p $(@D)
 	$(call exec,(cat $<; \
 		echo "FULL_PATH_NAMES=YES"; \
-		echo "INPUT=$(patsubst $(<D)/%,$(INCLUDE_DIR)/$*/%, \
-				$(wordlist 2,$(words $^),$^))"; \
+		$(if $(filter INPUT,$(DOXYGEN_VARS)),,\
+			echo "INPUT=$(patsubst $(<D)/%,$(INCLUDE_DIR)/$*/%, \
+					$(wordlist 2,$(words $^),$^))";) \
 		echo "OUTPUT_DIRECTORY=$(@D)"; \
 		echo "INCLUDE_PATH=$(INCLUDE_DIR)"; \
 		echo "STRIP_FROM_PATH=$(INCLUDE_DIR)"; \
 		echo "STRIP_FROM_INC_PATH=$(INCLUDE_DIR)"; \
-		echo "QUIET=$(if $V,YES,NO)") | doxygen -,$(@D),doxygen)
+		echo "QUIET=$(if $V,YES,NO)"; \
+		$(foreach v,$(DOXYGEN_VARS),\
+				echo '$v=$($(DOXYGEN_VARS_PREFIX)$v)';) \
+		) | doxygen -,$(@D),doxygen)
 	$V touch $@
 
 # Run Sphinx to build the documentation.  It expects the variable SPHINX_DIR
