@@ -390,7 +390,6 @@ $D/%/doxygen-stamp:
 			echo "INPUT=$(patsubst $(<D)/%,$(INCLUDE_DIR)/$*/%, \
 					$(wordlist 2,$(words $^),$^))";) \
 		echo "OUTPUT_DIRECTORY=$(@D)"; \
-		echo "INCLUDE_PATH=$(INCLUDE_DIR)"; \
 		echo "STRIP_FROM_PATH=$(INCLUDE_DIR)"; \
 		echo "STRIP_FROM_INC_PATH=$(INCLUDE_DIR)"; \
 		echo "QUIET=$(if $V,YES,NO)"; \
