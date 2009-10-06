@@ -30,6 +30,10 @@ COLOR_CMD ?= 00;33
 # See COLOR_CMD comment for details.
 COLOR_ARG ?=
 
+# ANSI color used for the warnings if $(COLOR) is non-empty
+# See COLOR_CMD comment for details.
+COLOR_WARN ?= 00;36
+
 # Flavor (variant), should be one of "dbg", "opt" or "cov"
 F ?= opt
 
@@ -269,7 +273,8 @@ symlink_include_dir = $(shell \
 # have changed (optional).  This should be used as a rule action or something
 # where a shell script is expected.
 gen_rebuild_flags = $(shell if test x"$2" != x"`cat $1 2>/dev/null`"; then \
-		$(if $3,test -f $1 && echo "$3";) \
+		$(if $3,test -f $1 && echo "$(if $(COLOR),$(if $(COLOR_WARN),\
+			\033[$(COLOR_WARN)m$3\033[00m,$3),$3);";) \
 		echo "$2" > $1 ; fi)
 
 # Include sub-directory's Build.mak.  The only argument is a list of
@@ -494,17 +499,17 @@ SPHINX.FLAGS := $(call varcat,SPHINX SPHINX_FORMAT SPHINX_PAPERSIZE)
 
 # Create files containing the current flags to trigger a rebuild if they change
 setup_flag_files__ := $(call gen_rebuild_flags,$G/compile-c-flags, \
-	$(COMPILE.c.FLAGS),C compiler or flags; )
+	$(COMPILE.c.FLAGS),C compiler)
 setup_flag_files__ := $(setup_flag_files__)$(call gen_rebuild_flags, \
-	$G/compile-cpp-flags, $(COMPILE.cpp.FLAGS),C++ compiler or flags; )
+	$G/compile-cpp-flags, $(COMPILE.cpp.FLAGS),C++ compiler)
 setup_flag_files__ := $(setup_flag_files__)$(call gen_rebuild_flags, \
-	$G/link-o-flags, $(LINK.o.FLAGS),linker or link flags; )
+	$G/link-o-flags, $(LINK.o.FLAGS),linker)
 setup_flag_files__ := $(setup_flag_files__)$(call gen_rebuild_flags, \
-	$G/sphinx-flags, $(SPHINX.FLAGS),sphinx command or flags; )
+	$G/sphinx-flags, $(SPHINX.FLAGS),sphinx)
 
 # Print any generated message (if verbose)
 $(if $V,$(if $(setup_flag_files__), \
-	$(info !! Something changed: $(setup_flag_files__)re-building \
+	$(info !! Flags or commands changed:$(setup_flag_files__) re-building \
 			affected files...)))
 
 endif
