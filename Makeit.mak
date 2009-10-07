@@ -479,7 +479,7 @@ setup_build_dir__ := $(shell \
 	mkdir -p $O $B $L $D $(INCLUDE_DIR) $(addprefix $O,$(patsubst $T%,%,\
 		$(shell find $T -type d $(foreach d,$(BUILD_DIR_EXCLUDE), \
 				-not -path '*/$d' -not -path '*/$d/*')))); \
-	test -L $(VD)/last || ln -s $F $(VD)/last )
+	rm -f $(VD)/last && ln -s $F $(VD)/last )
 
 
 # Automatic rebuilding when flags or commands changes
