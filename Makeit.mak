@@ -34,6 +34,10 @@ COLOR_ARG ?=
 # See COLOR_CMD comment for details.
 COLOR_WARN ?= 00;36
 
+# ANSI color used for commands output if $(COLOR) is non-empty
+# See COLOR_CMD comment for details.
+COLOR_OUT ?= 00;31
+
 # Flavor (variant), should be one of "dbg", "opt" or "cov"
 F ?= opt
 
@@ -167,11 +171,14 @@ abbr = $(if $(call eq,$(call abbr_helper,$1),$1),$1,$(addprefix \
 # pretty print.
 vexec_pc = $(if $1,\033[$1m%s\033[00m,%s)
 vexec_p = $(if $(COLOR), \
-	'   $(call vexec_pc,$(COLOR_CMD)) $(call vexec_pc,$(COLOR_ARG))\n', \
+	'   $(call vexec_pc,$(COLOR_CMD)) $(call vexec_pc,$(COLOR_ARG))\n$(if \
+			$(COLOR_OUT),\033[$(COLOR_OUT)m)', \
 	'   %s %s\n')
 vexec = $(if $V,printf $(vexec_p) \
 		'$(call abbr,$(if $3,$(strip $3),$(firstword $1)))' \
-		'$(call abbr,$(if $2,$(strip $2),$@))' ; )$1
+		'$(call abbr,$(if $2,$(strip $2),$@))' ; )$1 \
+		$(if $V,$(if $(COLOR),$(if $(COLOR_OUT), \
+				; r=$$? ; printf '\033[00m' ; exit $$r)))
 
 # Same as vexec but it silence the echo command (prepending a @ if $V).
 exec = $V$(call vexec,$1,$2,$3)
