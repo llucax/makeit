@@ -478,14 +478,11 @@ test: $$(test)
 # Create $O, $B, $L, $D and $(INCLUDE_DIR) directories and replicate the
 # directory structure of the project into $O. Create one symbolic link "last"
 # to the current build directory.
-#
-# NOTE: the second mkdir can yield no arguments if the project don't have any
-#       subdirectories, that's why the current directory "." is included, so it
-#       won't show an error message in case of no subdirectories.
 setup_build_dir__ := $(shell \
 	mkdir -p $O $B $L $D $(INCLUDE_DIR) $(addprefix $O,$(patsubst $T%,%,\
 		$(shell find $T -type d $(foreach d,$(BUILD_DIR_EXCLUDE), \
-				-not -path '*/$d' -not -path '*/$d/*')))); \
+			-not -path '$T/$d' -not -path '$T/$d/*' \
+			-not -path '$T/*/$d' -not -path '$T/*/$d/*')))); \
 	rm -f $(VD)/last && ln -s $F $(VD)/last )
 
 
