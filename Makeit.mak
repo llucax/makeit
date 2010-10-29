@@ -38,8 +38,8 @@ COLOR_WARN ?= 00;36
 # See COLOR_CMD comment for details.
 COLOR_OUT ?= 00;31
 
-# Flavor (variant), should be one of "dbg", "opt" or "cov"
-F ?= opt
+# Flavor (variant), can be defined by the user in Config.mak
+F ?= default
 
 # Use C++ linker by default
 LINKER := $(CXX)
@@ -311,41 +311,17 @@ valgrind = $(call exec,$(if $(VALGRIND),$(VALGRIND_CMD)) $1,\
 # Overridden flags
 ##################
 
-# Warn about everything
-override CPPFLAGS += -Wall
-
 # Use the includes directories to search for includes
 override CPPFLAGS += -I$(INCLUDE_DIR)
 
 # Let the program know where it will be installed
 override CPPFLAGS += -DPREFIX=$(prefix)
 
-# Be standard compliant
-override CFLAGS += -std=c99 -pedantic
-override CXXFLAGS += -std=c++98 -pedantic
-
 # Use the generated library directory to for libraries
-override LDFLAGS += -L$L -Wall
+override LDFLAGS += -L$L
 
 # Make sure the generated libraries can be found
 export LD_LIBRARY_PATH := $L:$(LD_LIBRARY_PATH)
-
-
-# Variant flags
-################
-
-ifeq ($F,dbg)
-override CPPFLAGS += -ggdb -DDEBUG
-endif
-
-ifeq ($F,opt)
-override CPPFLAGS += -O2 -DNDEBUG
-endif
-
-ifeq ($F,cov)
-override CPPFLAGS += -ggdb -pg --coverage
-override LDFLAGS += -pg --coverage
-endif
 
 
 # Automatic dependency handling
