@@ -1,8 +1,11 @@
 ifndef Toplevel.mak.included
 Toplevel.mak.included := 1
 
-# Load top-level directory local configuration
+# Load top-level directory project configuration
 sinclude $T/Config.mak
+
+# Load top-level directory local configuration
+sinclude $T/Config.local.mak
 
 # Include the build system library
 include $T/Makeit.mak
