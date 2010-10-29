@@ -1,10 +1,9 @@
 
-# Top-level directory
-T := .
+.PHONY: example
+example:
+	@$(MAKE) -C example
 
-# Default goal for building this directory
-.DEFAULT_GOAL := all
-
-# Include the top-level makefile
-include $T/Toplevel.mak
+.PHONY: clean-example
+clean-example:
+	@$(MAKE) -C example clean
 
