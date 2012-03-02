@@ -1,8 +1,8 @@
 ifndef Makeit.mak.included
 Makeit.mak.included := 1
 
+#__VAR_DOC_START__
 # These variables should be provided by the Makefile that include us:
-# P should be the project name, mostly used to handle include directories
 # T should be the path to the top-level directory.
 # S should be sub-directory where the current makefile is, relative to $T.
 
@@ -127,6 +127,7 @@ INCLUDE_DIR ?= $G/include
 # This variable is "lazy" because $S changes all the time, so it should be
 # evaluated in the context where $C is used, not here.
 C = $T/$S
+#__VAR_DOC_END__
 
 
 # Functions

@@ -1,0 +1,481 @@
+.. -*- restructuredtext -*-
+
+
+=====================================
+Makeit - The Make-loving build system
+=====================================
+
+:Author: Leandro Lucarella
+:Contact: luca@llucax.com.ar
+:Copyright: Leandro Lucarella (2010), released under the BOLA_ license
+:Abstract: Makeit_ is a simple yet powerful and feature-rich build system based
+        on `GNU Make`_.  Unlike most Make_-based build systems it doesn't
+        generate Makefiles, but transparently use `GNU Make`_ features, assuming
+        the user knows how Make_ works for complex tasks. Despite that, most
+        simple C/C++ projects can be build without knowing Make_ at all.
+        Simplicity and customizability are among the main goals; you can add the
+        build system to your project by just copying two Make_ scripts and you
+        immediately get support for: separated build directory, sub-project
+        embedding, nice colored output, flavors (variants), automatic
+        recompilation on compiler/flags change, automatic dependency tracking,
+        easy (un)installation, some pkg-config_ integration, building Doxygen_
+        and Sphinx_ documentation, (limited) precompiled headers generation,
+        etc.
+
+.. _BOLA: http://blitiri.com.ar/p/bola/
+.. _GNU Make: http://www.gnu.org/software/make/
+.. _Make: http://www.opengroup.org/onlinepubs/009695399/utilities/make.html
+.. _Makeit: http://www.llucax.com.ar/proj/makeit/
+.. _Sphinx: http://sphinx.pocoo.org/
+.. _Doxygen: http://www.stack.nl/~dimitri/doxygen/
+.. _pkg-config: http://pkg-config.freedesktop.org/wiki/
+
+
+
+About
+=====
+
+Most people **hate** Make_ [#makefn]_ because they don't understand it, or they
+don't really know how to use it. I can understand that, I've been there many
+years, and I can see why; it's really very hard to find good documentation or
+examples. As a result, most Make_-based build systems try to hide Make_ and
+people tend to deal with make in a trial and error basis.
+
+Makeit_ takes the opposite approach. I think Make_ is a great,
+**misunderstood**, piece of software, and this build system tries to take
+advantage of that, and show it. Also `GNU Make`_ is available almost everywhere,
+which means practically **no dependencies**; people is familiarized `Make`_
+**usage** to build software, being able to just type ``make prefix=/usr
+install`` is always a plus, specially for distributions packagers.
+
+
+Features
+--------
+
+Here is a quick list of the features supported by Makeit_:
+
+* Non-recursive (means faster builds)
+* Few dependencies (just `GNU Make`_, GCC_ for automatic dependency handling and
+  standard *Unix* core utilities to copy files, etc.)
+* Nice and brief colored output by default (can be verbose too)
+* Flavors (variants)
+* Separated build directory
+* Easy rules to make:
+
+  * Binaries
+  * Dynamic libraries (shared objects)
+  * Sphinx_ documentation
+  * Doxygen_ documentation
+  * Install and uninstall generated binaries, libraries and pkg-config_
+    specification file
+  * Run programs using Valgrind_ (useful for automatic testing)
+* Detection of flags or compiler change (passed in the command line or when
+  changing the Makefile) and automatically recompilation of affected files
+* Generation of pkg-config_ specification files using a simple replace mechanism
+* Sub-project embedding (easily make a project using Makeit_ compiled as part of
+  yours, very useful in combination with Git_ submodules__ or Subversion_
+  externals__)
+* `Precompiled headers`__ (using GCC_, limited)
+* Automatic dependency tracking for C/C++ using GCC_\ 's *-M* flags__
+* Concurrent builds (using Make_\ 's ``-j`` or ``-l`` options)
+
+.. _Git: http://git-scm.com/
+.. _Subversion: http://subversion.apache.org/
+.. _GCC: http://gcc.gnu.org
+.. _Valgrind: http://valgrind.org/
+__ http://www.kernel.org/pub/software/scm/git/docs/git-submodule.html
+__ http://svnbook.red-bean.com/nightly/en/svn.advanced.externals.html
+__ http://gcc.gnu.org/onlinedocs/gcc/Preprocessor-Options.html
+__ http://gcc.gnu.org/onlinedocs/gcc/Precompiled-Headers.html
+
+
+Quick example
+=============
+
+For the impatient, a good way to introduce you to Makeit_ is by using examples.
+So let's see a couple. First the common setup: you have to copy ``Makeit.mak``
+and ``Toplevel.mak`` to your project's root directory.
+
+Suppose you want to build and install a simple C++ program; all you have is
+a directory with a bunch of C++ source files with the suffix ``.cpp``, and you
+want to make that a program. First you probably want to create a file called
+``Makefile`` to make writing just ``make`` work, but this ``Makefile`` should
+include Makeit_ files too::
+
+        # Top-level directory
+        T := .
+
+        # Default goal for building this directory
+        .DEFAULT_GOAL := all
+
+        # Include the top-level build
+        include $T/Toplevel.mak
+
+This is probably created only once in the lifetime of a project, and never
+changed again. Now the real deal, this is the file you will be working most of
+the time; create a new file called ``Build.mak`` with this content::
+
+        # Build the program
+        $B/prog: $(call find_objects,cpp)
+        all += $B/prog
+
+        # Install the program executable
+        $I/bin/prog: $B/prog
+        install += $I/bin/prog
+
+That's it, you're done. Type ``make prefix=here install`` for example and you'll
+see::
+
+        $ make prefix=here install 
+           g++ build/default/obj/main.o
+           g++ build/default/obj/list.o
+           g++ build/default/obj/hash.o
+           g++ build/default/bin/prog
+           install here/bin/prog
+
+You just built your program in the ``build/default`` directory and then
+installed it a ``here/bin``. The words ``g++`` and ``ìnstall`` will be colored
+in your console :)
+
+The ``$B`` variable holds the binaries build directory; ``$(call
+find_objects,cpp)`` is calling a function defined by Makeit_ that searches for
+all the files ending with ``.cpp``, so we are telling Make_ that our program
+*depends* on all those source files. The line ``all += $B/prog`` tells Makeit_
+to build the program when building the ``all`` target, which is the default
+target used by Makeit_.
+
+The installation is very similar: the ``$I`` variable holds the install
+top-directory and we are telling Make_ that the installed program *depends* on
+the built program. Then we are adding the installed program to the ``install``
+variable, which is used by Makeit_ to tell make what to build when using the
+target ``ìnstall``.
+
+What if we want to undo all that? Just type::
+
+        $ make prefix=here uninstall clean
+           rm install/bin/prog
+           rm build
+
+If you just want to force a rebuild, use Make_\ 's ``-B`` option instead::
+
+        $ make
+        make: Nothing to be done for `all'.
+        $ make -B
+           g++ build/default/obj/main.o
+           g++ build/default/obj/list.o
+           g++ build/default/obj/hash.o
+           g++ build/default/bin/prog
+
+Try experimenting a little, build the project, then change a file, then type
+``make`` again. Type ``make CXXFLAGS=-O2`` and see what happens; try ``make
+CXX=clang`` or ``make COLOR=0`` or ``make GCH=1`` or ``make V=1``.
+
+If you like what you see, keep reading ;)
+
+
+.. [#makefn] I use Make_ and `GNU Make`_ in this document indistinctly. Makeit_
+        needs `GNU Make`_ to work, because it uses some of its features not
+        present in the standard Make_ as defined by POSIX. Most of the things
+        said about Make_ are general, not `GNU Make`_ specific. But bare in mind
+        that Makeit_ **needs** `GNU Make`_ for now (but I'm open to change that
+        in the future if there is a real demand of standard Make_ support).
+
+
+Download
+========
+
+You can always get the `current release`__ from the `release directory`__ or
+grab the most `up to date sources`__ from the Git_ repository.
+
+You can also take a look to the `MakeIt gitweb`__ interface to see the latest
+changes online or subscribe to its atom feed to `follow the development`__.
+
+For more information, bug reports or support, please send me an e-mail.
+
+__ releases/makeit-current.tar.gz
+__ releases/
+__ http://git.llucax.com.ar/w/software/makeit.git?a=snapshot
+__ http://git.llucax.com.ar/w/software/makeit.git
+__ http://git.llucax.com.ar/w/software/makeit.git?a=atom
+
+
+Usage
+=====
+
+MakeIt_ is basically a Make_ library. To write your build scripts, you have to
+write make files, but MakeIt_ greately simplifies the process by using better
+defaults and some magic.
+
+
+Structure and files
+-------------------
+
+MakeIt_ consist in only two files (``Makeit.mak`` and ``Toplevel.mak``) but
+there are a few more files that the user should or could create to customize the
+build process.
+
+``Makeit.mak``
+        The MakeIt_ library itself.
+
+``Toplevel.mak``
+        The glue that sticks all together. It includes ``Makeit.mak`` and the
+        other useful make files mentioned here.
+
+``Config.mak``
+        Project configuration file (optional). Project-wide variables_ are
+        usually defined here.
+
+``Config.local.mak``
+        Local user configuration file (optional). Useful to control details on
+        how the build is presented (like verbose mode or the usage of colours).
+
+``Build.mak``
+        User rules to do the actual build.
+
+``Makefile``
+        The classic file read by Make_ by default, so you can simply write
+        ``make``. Usually it only have the location of the top-level directory
+        (defining the ``T`` variable), the default target you want to build
+        when invoking Make_ (defining the `GNU Make`_\ 's ``.DEFAULT_GOAL``
+        variable) and then includes ``Toplevel.mak`` to do the actual work.
+
+
+Setting up the project
+----------------------
+
+As described in the `quick example`_, you have to copy the ``Makeit.mak`` and
+``Toplevel.mak`` files to your project's root directory. Then, create
+a ``Makefile`` defining where to find the top-level directory of the project,
+the default goal and include ``Toplevel.mak``. You can take a look at the `quick
+example`_ to see a ``Makefile`` doing that.
+
+Finally, you should create the ``Build.mak`` file to specify how to build the
+project.
+
+
+Writing a ``Build.mak`` file
+----------------------------
+
+Writing a ``Build.mak`` file is writing a makefile, and because of that it is
+highly recommended to have some Make_ knowledge, but for simple stuff you can
+probably survive without it.
+
+MakeIt_ provides a set of useful predefined variables and functions to ease the
+creation of makefiles. It also provide some useful `pattern rules`_ to easily
+build a few type of targets, like C/C++ programs.
+
+.. _pattern rules: http://www.gnu.org/software/make/manual/html_node/Pattern-Rules.html#Pattern-Rules
+
+Building a C/C++ program
+~~~~~~~~~~~~~~~~~~~~~~~~
+If you want to build a C/C++ program, all you have to do is write a target in
+the ``$B`` directory (``$B`` is a predefined variable with the path where the
+executable files should be built). By just writing this in you ``Build.mak``
+file (assuming your program should be built from the source file called
+``source.c`` in the top-level directory) you should be able to write ``make
+build/default/bin/prog`` to build the program::
+
+        $B/prog: $C/source.c
+
+Sometimes, when you have more than one program to build for example, it's useful
+to define a *shortcut* target, to build a program, since specifying the full
+target path (``build/default/bin/prog`` in this case) can be a little annoying.
+You can add these lines to the ``Build.mak`` files for example::
+
+        .PHONY: prog
+        prog: $B/prog
+
+The ``.PHONY`` special target tells Make_ that ``prog`` is not really a built
+file, is a target that should always be rebuilt, and the next line tells Make_
+that in order to build the ``prog`` target, ``$B/prog`` should be built first
+(``$B/prog`` is a dependency for ``prog``). Now you can simply write ``make
+prog`` to build the program.
+
+If you want the program to be build when building the (default) ``all`` target,
+you can use the special variable ``all``. Add this line to the ``Build.mak``
+file::
+
+        all += $B/prog
+
+And now you can simply write ``make`` to build the program. Alternatively, you
+can change your ``Makefile`` and use ``prog`` (or ``$B/prog``) as the default
+goal::
+
+        .DEFAULT_GOAL: prog
+
+Note that MakeIt_ will use GCC_ to automatically find your program's
+dependencies. For example, if ``source.c`` includes ``source.h``, you don't need
+to explicitly inform Make_ of that dependency (but you could if you like). If
+you change ``source.h``, ``prog`` will be rebuilt as expected.
+
+Building libraries
+~~~~~~~~~~~~~~~~~~
+Building static and dynamic libraries is very similar to building programs, just
+use the ``$L`` predefined variable (path where the libraries are stored) instead
+of ``$B`` and use the s, just use the appropriate suffix (``.a`` for static
+libraries and ``.so`` for dynamic libraries). For example::
+
+        $L/lib.so: $C/lib.c
+
+MakeIt_ will build the required objects using ``-fPIC`` as needed and do all the
+linking. You can also add the libraries to the ``all`` variables to be built by
+default (or any other arbitrary target for that matter).
+
+
+Variables
+---------
+
+Most configuration is done through the use of some predefined variables. The
+meaning of those variables is described as comments in the ``Makeit.mak`` file,
+long with their default values. There are variables that usually don't have to
+be changed, there are variables that must be defined by the *developer* and
+there are variables that are mostly intended for the *user* (the person who run
+``make``). These distinction is not always very clear though, so take it with
+a grain of salt.
+
+You can see the Appendix_ for the `complete list of variables used by Makeit`_.
+
+
+Mandatory variables
+~~~~~~~~~~~~~~~~~~~
+Theses are variables the developer must define for MakeIt_ to work.
+
+``T``
+        Root directory of the project. It can be relative (``.`` for example)
+        and it's usually specified in the ``Makefile`` before including
+        ``Toplevel.mak``.
+
+``S``
+        Sub-directory where the current makefile is, relative to ``T``. This can
+        be empty if the makefile is in the same directory as ``T`` and is
+        automatically defined when using the ``include_subdirs`` function to
+        include other ``Build.mak`` files).
+
+Overridable developer variables
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+These are variables the developer can override to customize MakeIt_ behaviour.
+
+``BUILD_DIR_NAME``
+        The base directory where the built files are stored (should be relative
+        to the project's root directory).
+
+``BUILD_DIR_EXCLUDE``
+        Directories to exclude when replicating the directory tree in the build
+        directory.
+
+``GCH``
+        Use precompiled headers (empty: disabled, non-empty: enabled). See
+        `Using precompiled headers`_ for details.
+
+General developer variables
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+These are variables the developer can use when writing the ``Build.mak`` files.
+Most of them can be overriden too, but it isn't very useful to do so.
+
+``T``
+        The same variable you must define, but MakeIt_ changes it to use the
+        full path instead of being a relative path, so it can be safely used
+        inside any sub-directory of the project.
+
+
+``C``
+        Full path to the current directory. You should always prefix you files
+        with this variable if you want MakeIt_ to work when running Make_ from
+        any directory. Bare in mind that this is a lazy variable, which means
+        that it will be expanded when make actually uses the variable. As
+        a consecuence, you should only use this variable in the target's
+        definition, not in the actions. If you need to use it in the action, you
+        can workarround this by defining a new target specific variable, like::
+
+                target: CDIR := $C
+                target:
+                        @echo 'Some action using $$C: $(CDIR)'
+
+``VD``
+        Base directory where to put the flavors (variants). This is the same as
+        ``BUILD_DIR_NAME`` but using a full path.
+
+``G``
+        Top directory where the current flavor built files are stored. Default:
+        ``$(VD)/$F``.
+
+``O``
+        Objects build directory (where the built object files will be stored).
+        Default: ``$G/obj``.
+
+``B``
+        Binaries directory. Default: ``$G/bin``.
+
+``L``
+        Libraries directory. Default ``$G/lib``.
+
+``D``
+        Documentation directory. Default: ``$(VD)/doc``.
+
+``I``
+        Installation directory. Default: ``$(DESTDIR)$(prefix)``.
+
+.. note::
+
+        * Remember you can override a variable for a specific target by using
+          this format::
+
+                target: VARIABLE := value
+
+          You can use other make assignment operator and modifiers, like::
+
+                target: override VARIABLE += value
+
+        * The ``S`` variable is defined automatically if you use the
+          ``include_subdirs`` function.
+
+
+User variables
+~~~~~~~~~~~~~~
+
+``V``
+        Verbose mode (empty: disabled, non-empty: enabled). When verbose mode is
+        on, the full commands are printed as Make_ usually does. You can specify
+        the default mode in the ``Config.mak`` or ``Config.local.mak`` files and
+        you can always override it when invoking Make_ (``make V=1`` for
+        example).
+
+``F``
+        Which flavor (variant) to compile. Default: ``default``. See `Using
+        flavors`_ for details.
+
+``COLOR``
+        Use colors in the output when using verbose mode (empty: disabled,
+        non-empty: enabled).
+
+``COLOR_*``
+        Fine-grain control on colors, see the documentation in ``Makeit.mak``
+        for details.
+
+``prefix``
+        Base directory where to install files when using the ``install`` target
+        (should be absolute). Default: ``/usr/local``.
+
+``DESTDIR``
+        Path to a complete alternative environment, usually a jail, or an
+        installed system mounted elsewhere than /. Specially useful for
+        distribution packagers.
+
+
+Using flavors
+=============
+
+Using precompiled headers
+=========================
+
+Appendix
+========
+
+Complete list of variables used by Makeit
+-----------------------------------------
+
+.. include:: Makeit.mak
+        :literal:
+        :start-after: #__VAR_DOC_START__
+        :end-before: #__VAR_DOC_END__
+
